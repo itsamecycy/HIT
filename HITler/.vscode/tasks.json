@@ -1,0 +1,32 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build raylib game",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "src/main.cpp",
+
+                "src/maps/testmap.cpp",
+                "src/maps/testmap.h",
+                "src/maps/map.h",
+
+                "-I", "src",
+
+                "-lraylib",
+                "-lopengl32",
+                "-lgdi32",
+                "-lwinmm",
+
+                "-o",
+                "game.exe"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        }
+    ]
+}
