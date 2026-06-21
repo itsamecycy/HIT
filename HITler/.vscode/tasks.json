@@ -11,6 +11,8 @@
                 "src/maps/testmap.cpp",
                 "src/maps/testmap.h",
                 "src/maps/map.h",
+                "src/system/playerMovement.cpp",
+                "src/system/playerMovement.h",
 
                 "-I", "src",
 
