@@ -1,10 +1,16 @@
 #include "raylib.h"
 #include "system/playerMovement.h"
 #include "raymath.h"
+#include <iostream>
 
 int main()
 {
-    InitWindow(1280, 720, "HITler");
+    // Window configuration
+    const int screenWidth = 1280;
+    const int screenHeight = 720;
+
+    // Initialize window
+    InitWindow(screenWidth, screenHeight, "HITler");
 
     DisableCursor();
     SetTargetFPS(60);
@@ -18,17 +24,20 @@ int main()
 
     PlayerMovement player;
 
+    // Main game loop
     while (!WindowShouldClose())
     {
+        // Update
         player.Update(camera);
 
+        // Rendering
         BeginDrawing();
         ClearBackground(GRAY);
 
         BeginMode3D(camera);
 
-        DrawGrid(50, 1.0f);
-        DrawCube({0,1,5}, 2,2,2, RED);
+        DrawGrid(50, 2.0f);
+        DrawCube({0.0f, 1.0f, 5.0f}, 2.0f, 2.0f, 2.0f, RED);
 
         EndMode3D();
 
