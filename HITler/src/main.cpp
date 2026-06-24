@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include "system/playerMovement.h"
+#include "scenes/mainMenu.h"
 #include "raymath.h"
 #include <iostream>
 
@@ -23,6 +24,7 @@ int main()
     camera.projection = CAMERA_PERSPECTIVE;
 
     PlayerMovement player;
+    MainMenu Main_Menu;
 
     // Main game loop
     while (!WindowShouldClose())
