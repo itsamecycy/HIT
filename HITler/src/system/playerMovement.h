@@ -8,6 +8,8 @@ class PlayerMovement
 public:
     PlayerMovement();
     void Update(Camera3D& camera);
+    bool IsWalking() const;
+    bool IsSprinting() const;
 
 private:
     Vector3 position;
@@ -17,6 +19,9 @@ private:
 
     float walkSpeed;
     float sprintSpeed;
+
+    bool moving;
+    bool sprinting;
 
     // slide
     bool sliding;

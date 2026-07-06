@@ -3,24 +3,29 @@
 
 #include <string>
 
+enum MenuResult
+{
+    MENU_NONE = 0,
+    MENU_START,
+    MENU_LOAD,
+    MENU_SETTINGS,
+    MENU_CREDITS,
+    MENU_EXIT
+};
+
 class MainMenu
 {
-    public:
-        MainMenu();
-        void Draw();
-        void Update();
-        void Reset();
+public:
+    MainMenu();
+    MenuResult Update(int screenWidth, int screenHeight);
+    void Draw(int screenWidth, int screenHeight) const;
+    void Reset();
 
-    private:
-        std::string title = "HITler";
-        int selected = 0;
-        int optionCount = 2;
-        bool start = false;
-        bool quit = false;
-        bool reset = false;
-
-        std::string options[4] = {"Start", "Load","Settings", "Quit"};
-
+private:
+    std::string title;
+    int selected;
+    static constexpr int optionCount = 5;
+    std::string options[optionCount];
 };
 
 #endif // MAIN_MENU_H

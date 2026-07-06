@@ -11,6 +11,9 @@ PlayerMovement::PlayerMovement()
     walkSpeed = 5.0f;
     sprintSpeed = 9.0f;
 
+    moving = false;
+    sprinting = false;
+
     sliding = false;
     slideTime = 0.0f;
     slideDuration = 0.5f;
@@ -21,6 +24,16 @@ PlayerMovement::PlayerMovement()
     grounded = true;
     gravity = 20.0f;
     jumpForce = 8.0f;
+}
+
+bool PlayerMovement::IsWalking() const
+{
+    return moving && !sprinting;
+}
+
+bool PlayerMovement::IsSprinting() const
+{
+    return moving && sprinting;
 }
 
 void PlayerMovement::Update(Camera3D& camera)
@@ -51,12 +64,8 @@ void PlayerMovement::Update(Camera3D& camera)
     Vector3 right = Vector3CrossProduct(flatForward, {0,1,0});
 
     // Speed
-    float speed = walkSpeed;
-
-    bool sprinting = IsKeyDown(KEY_LEFT_SHIFT);
-
-    if (sprinting)
-        speed = sprintSpeed;
+    sprinting = IsKeyDown(KEY_LEFT_SHIFT);
+    float speed = sprinting ? sprintSpeed : walkSpeed;
 
     // WASD Movement
     Vector3 move = {0};
@@ -67,7 +76,14 @@ void PlayerMovement::Update(Camera3D& camera)
     if (IsKeyDown(KEY_A)) move = Vector3Subtract(move, right);
 
     if (Vector3Length(move) > 0)
+    {
         move = Vector3Normalize(move);
+        moving = true;
+    }
+    else
+    {
+        moving = false;
+    }
 
     // Slide
     if (slideTimer > 0) slideTimer -= dt;
