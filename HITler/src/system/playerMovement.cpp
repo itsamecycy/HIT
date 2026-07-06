@@ -13,6 +13,8 @@ PlayerMovement::PlayerMovement()
 
     moving = false;
     sprinting = false;
+    grappling = false;
+    grappleSpeed = 28.0f;
 
     sliding = false;
     slideTime = 0.0f;
@@ -36,7 +38,28 @@ bool PlayerMovement::IsSprinting() const
     return moving && sprinting;
 }
 
-void PlayerMovement::Update(Camera3D& camera)
+bool PlayerMovement::IsGrappling() const
+{
+    return grappling;
+}
+
+void PlayerMovement::GrappleTo(const Vector3& target)
+{
+    grappling = true;
+    grappleTarget = target;
+}
+
+void PlayerMovement::StopGrapple()
+{
+    grappling = false;
+}
+
+Vector3 PlayerMovement::GetGrappleTarget() const
+{
+    return grappleTarget;
+}
+
+void PlayerMovement::Update(Camera3D& camera, const Obstacle* obstacles, int obstacleCount)
 {
     float dt = GetFrameTime();
 
@@ -85,6 +108,45 @@ void PlayerMovement::Update(Camera3D& camera)
         moving = false;
     }
 
+    if (grappling)
+    {
+        Vector3 grappleDir = Vector3Subtract(grappleTarget, position);
+        float grappleDistance = Vector3Length(grappleDir);
+        if (grappleDistance < 1.0f)
+        {
+            grappling = false;
+        }
+        else
+        {
+            grappleDir = Vector3Normalize(grappleDir);
+            Vector3 desiredPosition = Vector3Add(position, Vector3Scale(grappleDir, grappleSpeed * dt));
+
+            BoundingBox playerBox = { {desiredPosition.x - 0.3f, desiredPosition.y, desiredPosition.z - 0.3f}, {desiredPosition.x + 0.3f, desiredPosition.y + 1.8f, desiredPosition.z + 0.3f} };
+            bool blocked = false;
+            for (int i = 0; i < obstacleCount; ++i)
+            {
+                if (CheckCollisionBoxes(playerBox, obstacles[i].box))
+                {
+                    blocked = true;
+                    break;
+                }
+            }
+
+            if (!blocked)
+            {
+                position = desiredPosition;
+            }
+            else
+            {
+                grappling = false;
+            }
+
+            camera.position = position;
+            camera.target = Vector3Add(position, forward);
+            return;
+        }
+    }
+
     // Slide
     if (slideTimer > 0) slideTimer -= dt;
 
@@ -101,7 +163,22 @@ void PlayerMovement::Update(Camera3D& camera)
 
     if (sliding)
     {
-        position = Vector3Add(position, Vector3Scale(slideDir, 20.0f * dt));
+        Vector3 desired = Vector3Add(position, Vector3Scale(slideDir, 20.0f * dt));
+        BoundingBox playerBox = { {desired.x - 0.3f, desired.y, desired.z - 0.3f}, {desired.x + 0.3f, desired.y + 1.8f, desired.z + 0.3f} };
+        bool blocked = false;
+        for (int i = 0; i < obstacleCount; ++i)
+        {
+            if (CheckCollisionBoxes(playerBox, obstacles[i].box))
+            {
+                blocked = true;
+                break;
+            }
+        }
+
+        if (!blocked)
+        {
+            position = desired;
+        }
 
         slideTime -= dt;
 
@@ -110,7 +187,22 @@ void PlayerMovement::Update(Camera3D& camera)
     }
     else
     {
-        position = Vector3Add(position, Vector3Scale(move, speed * dt));
+        Vector3 desired = Vector3Add(position, Vector3Scale(move, speed * dt));
+        BoundingBox playerBox = { {desired.x - 0.3f, desired.y, desired.z - 0.3f}, {desired.x + 0.3f, desired.y + 1.8f, desired.z + 0.3f} };
+        bool blocked = false;
+        for (int i = 0; i < obstacleCount; ++i)
+        {
+            if (CheckCollisionBoxes(playerBox, obstacles[i].box))
+            {
+                blocked = true;
+                break;
+            }
+        }
+
+        if (!blocked)
+        {
+            position = desired;
+        }
     }
 
     // Jumping
@@ -126,11 +218,47 @@ void PlayerMovement::Update(Camera3D& camera)
         position.y += verticalVelocity * dt;
     }
 
+    bool standingOnObstacle = false;
+
     if (position.y <= 2.0f)
     {
         position.y = 2.0f;
         verticalVelocity = 0;
         grounded = true;
+        standingOnObstacle = true;
+    }
+    else
+    {
+        for (int i = 0; i < obstacleCount; ++i)
+        {
+            BoundingBox playerBox = { {position.x - 0.3f, position.y, position.z - 0.3f},
+                                      {position.x + 0.3f, position.y + 1.8f, position.z + 0.3f} };
+
+            if (CheckCollisionBoxes(playerBox, obstacles[i].box))
+            {
+                float obstacleTop = obstacles[i].box.max.y;
+                float obstacleBottom = obstacles[i].box.min.y;
+
+                if (position.y < obstacleTop && position.y + 1.8f > obstacleTop)
+                {
+                    position.y = obstacleTop;
+                    verticalVelocity = 0;
+                    grounded = true;
+                    standingOnObstacle = true;
+                }
+                else if (position.y + 1.8f > obstacleBottom && position.y < obstacleBottom)
+                {
+                    position.y = obstacleBottom - 1.8f;
+                    verticalVelocity = 0;
+                }
+                break;
+            }
+        }
+    }
+
+    if (!standingOnObstacle && position.y > 2.0f)
+    {
+        grounded = false;
     }
 
     // Camera update

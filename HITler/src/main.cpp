@@ -3,6 +3,8 @@
 #include "system/pauseSystem.h"
 #include "scenes/mainMenu.h"
 #include "raymath.h"
+#include "system/loadout.h"
+#include <float.h>
 
 enum class GameState
 {
@@ -44,14 +46,32 @@ int main()
     PlayerMovement player;
     MainMenu mainMenu;
     PauseSystem pauseSystem;
+    Loadout loadout;
+    bool showLoadout = false;
     GameState currentState = GameState::MAIN_MENU;
     bool menuMusicActive = false;
+
+    Obstacle obstacles[] =
+    {
+        { { { -10.0f, 0.0f, -10.0f }, { -8.0f, 18.0f, -8.0f } }, GRAY },
+        { { { 4.0f, 0.0f, -12.0f }, { 6.0f, 24.0f, -10.0f } }, DARKGRAY },
+        { { { -2.0f, 0.0f, 4.0f }, { 0.0f, 16.0f, 6.0f } }, LIGHTGRAY },
+        { { { 8.0f, 0.0f, 2.0f }, { 10.0f, 20.0f, 4.0f } }, GRAY }
+    };
+    const int obstacleCount = sizeof(obstacles) / sizeof(obstacles[0]);
+
+    // initialize loadout and sounds
+    loadout.Init();
+    Sound hookSound = LoadSound("assets/sounds/sfx/hook_sfx.mp3");
 
     while (!WindowShouldClose())
     {
         if (currentState == GameState::PLAYING)
         {
-            player.Update(camera);
+            if (!showLoadout)
+            {
+                player.Update(camera, obstacles, obstacleCount);
+            }
 
             if (IsKeyPressed(KEY_ESCAPE))
             {
@@ -60,20 +80,61 @@ int main()
                 EnableCursor();
             }
 
-            if (player.IsWalking())
+            if (IsKeyPressed(KEY_R))
             {
-                if (!IsSoundPlaying(walkSound))
+                if (player.IsGrappling())
                 {
-                    StopSound(sprintSound);
-                    PlaySound(walkSound);
+                    player.StopGrapple();
+                }
+                else if (!showLoadout)
+                {
+                    Ray ray = {camera.position, Vector3Normalize(Vector3Subtract(camera.target, camera.position))};
+                    float bestDistance = FLT_MAX;
+                    Vector3 hitPoint = {0};
+                    bool hit = false;
+
+                    for (int i = 0; i < obstacleCount; ++i)
+                    {
+                        RayCollision collision = GetRayCollisionBox(ray, obstacles[i].box);
+                        if (collision.hit && collision.distance > 0 && collision.distance < bestDistance)
+                        {
+                            bestDistance = collision.distance;
+                            hitPoint = collision.point;
+                            hit = true;
+                        }
+                    }
+
+                    if (hit)
+                    {
+                        player.GrappleTo(hitPoint);
+                        PlaySound(hookSound);
+                    }
                 }
             }
-            else if (player.IsSprinting())
+
+            // movement SFX (only when not showing loadout)
+            if (!showLoadout)
             {
-                if (!IsSoundPlaying(sprintSound))
+                if (player.IsWalking())
+                {
+                    if (!IsSoundPlaying(walkSound))
+                    {
+                        StopSound(sprintSound);
+                        PlaySound(walkSound);
+                    }
+                }
+                else if (player.IsSprinting())
+                {
+                    if (!IsSoundPlaying(sprintSound))
+                    {
+                        StopSound(walkSound);
+                        PlaySound(sprintSound);
+                    }
+                }
+                else
                 {
                     StopSound(walkSound);
-                    PlaySound(sprintSound);
+                    StopSound(sprintSound);
                 }
             }
             else
@@ -153,6 +214,13 @@ int main()
             UpdateMusicStream(mainMenuMusic);
         }
 
+        // Toggle loadout menu (now bound to B)
+        if (IsKeyPressed(KEY_B))
+        {
+            showLoadout = !showLoadout;
+            if (showLoadout) EnableCursor(); else DisableCursor();
+        }
+
         BeginDrawing();
 
         if (currentState == GameState::MAIN_MENU)
@@ -181,9 +249,7 @@ int main()
             ClearBackground(GRAY);
             BeginMode3D(camera);
             DrawGrid(50, 2.0f);
-            DrawCube({0.0f, 1.0f, 5.0f}, 2.0f, 2.0f, 2.0f, RED);
-            DrawCube({-4.0f, 1.0f, 2.0f}, 2.0f, 2.0f, 2.0f, BLUE);
-            DrawCube({3.0f, 1.0f, -2.0f}, 2.0f, 2.0f, 2.0f, DARKBLUE);
+            // debug cubes removed
 
             Vector3 rampA = {6.0f, 0.0f, -6.0f};
             Vector3 rampB = {9.0f, 0.0f, -6.0f};
@@ -191,10 +257,37 @@ int main()
             DrawTriangle3D(rampA, rampB, rampC, ORANGE);
             DrawTriangle3D(rampB, {9.0f, 0.0f, -4.0f}, rampC, BROWN);
 
-            DrawCube({-8.0f, 1.0f, 4.0f}, 2.0f, 2.0f, 2.0f, SKYBLUE);
-            DrawCube({2.0f, 1.0f, 7.0f}, 2.0f, 2.0f, 2.0f, LIME);
+            // more debug cubes removed
+
+            for (int i = 0; i < obstacleCount; ++i)
+            {
+                BoundingBox box = obstacles[i].box;
+                Vector3 size = { box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z };
+                Vector3 center = { box.min.x + size.x / 2.0f, box.min.y + size.y / 2.0f, box.min.z + size.z / 2.0f };
+                DrawCube(center, size.x, size.y, size.z, obstacles[i].color);
+                DrawCubeWires(center, size.x, size.y, size.z, BLACK);
+            }
+
+            if (player.IsGrappling())
+            {
+                DrawLine3D(camera.position, player.GetGrappleTarget(), YELLOW);
+                DrawSphere(player.GetGrappleTarget(), 0.15f, GOLD);
+            }
 
             EndMode3D();
+
+            // draw equipped gun in right hand
+            Gun* equipped = loadout.GetEquippedGun();
+            if (equipped && !showLoadout)
+            {
+                equipped->DrawInHand(camera, {0.4f, -0.2f, 0.6f});
+            }
+
+            // draw loadout UI overlay if open
+            if (showLoadout)
+            {
+                loadout.DrawMenu(screenWidth, screenHeight);
+            }
 
             if (currentState == GameState::PAUSED)
             {
@@ -204,8 +297,7 @@ int main()
 
         if (currentState == GameState::PLAYING)
         {
-            DrawCircle(screenWidth / 2, screenHeight / 2, 4, WHITE);
-            DrawCircleLines(screenWidth / 2, screenHeight / 2, 6, BLACK);
+            DrawCircle(screenWidth / 2, screenHeight / 2, 3, WHITE);
         }
 
         DrawFPS(10, 10);

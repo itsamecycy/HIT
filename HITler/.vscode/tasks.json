@@ -13,6 +13,8 @@
                 "src/system/playerMovement.cpp",
                 "src/system/pauseSystem.cpp",
                 "src/scenes/mainMenu.cpp",
+                "src/system/loadout.cpp",
+                "src/models/guns.cpp",
                 "-I",
                 "src",
                 "-lraylib",

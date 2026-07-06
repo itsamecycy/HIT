@@ -3,13 +3,23 @@
 
 #include "raylib.h"
 
+struct Obstacle
+{
+    BoundingBox box;
+    Color color;
+};
+
 class PlayerMovement
 {
 public:
     PlayerMovement();
-    void Update(Camera3D& camera);
+    void Update(Camera3D& camera, const Obstacle* obstacles, int obstacleCount);
     bool IsWalking() const;
     bool IsSprinting() const;
+    void GrappleTo(const Vector3& target);
+    void StopGrapple();
+    bool IsGrappling() const;
+    Vector3 GetGrappleTarget() const;
 
 private:
     Vector3 position;
@@ -22,6 +32,10 @@ private:
 
     bool moving;
     bool sprinting;
+
+    bool grappling;
+    Vector3 grappleTarget;
+    float grappleSpeed;
 
     // slide
     bool sliding;
