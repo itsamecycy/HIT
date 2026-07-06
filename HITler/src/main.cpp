@@ -280,13 +280,37 @@ int main()
             Gun* equipped = loadout.GetEquippedGun();
             if (equipped && !showLoadout)
             {
-                equipped->DrawInHand(camera, {0.4f, -0.2f, 0.6f});
+                // HUD debug: show mesh count and placeholder status
+                char status[128];
+                snprintf(status, sizeof(status), "Equipped meshes=%d placeholder=%s", equipped->GetMeshCount(), equipped->IsPlaceholder() ? "yes" : "no");
+                DrawText(status, 10, 40, 16, WHITE);
+
+                // try a larger scale and slightly different offsets for visibility
+                equipped->DrawInHand(camera, {0.45f, -0.35f, 0.7f});
             }
 
             // draw loadout UI overlay if open
             if (showLoadout)
             {
                 loadout.DrawMenu(screenWidth, screenHeight);
+                if (loadout.ConsumeEquip())
+                {
+                    showLoadout = false;
+                    DisableCursor();
+                }
+            }
+
+            // Show revolver load message if placeholder used
+            Gun* equipped2 = loadout.GetEquippedGun();
+            if (equipped2)
+            {
+                const char* msg = equipped2->LoadMessage();
+                if (msg && msg[0] != '\0' && equipped2->IsPlaceholder())
+                {
+                    DrawText(msg, 10, screenHeight - 60, 18, RED);
+                    const char* diag = loadout.GetDiagnostics();
+                    if (diag && diag[0] != '\0') DrawText(diag, 10, screenHeight - 30, 12, RED);
+                }
             }
 
             if (currentState == GameState::PAUSED)
