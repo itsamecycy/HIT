@@ -5,3 +5,5 @@ To build the game, go inside main.cpp then...
 ```bash
 CTRL+SHIFT+B
 ```
+
+To play the game just simply download the dist folder then run game.exe
