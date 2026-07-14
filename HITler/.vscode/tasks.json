@@ -49,9 +49,11 @@
                 "-L",
                 "C:\\msys64\\ucrt64\\lib",
                 "-l:libraylib.a",
+                "-l:libglfw3.a",
                 "-lopengl32",
                 "-lgdi32",
                 "-lwinmm",
+                "-lshlwapi",
                 "-o",
                 "game_standalone.exe"
             ],
