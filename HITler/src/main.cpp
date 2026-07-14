@@ -3,7 +3,6 @@
 #include "system/pauseSystem.h"
 #include "scenes/mainMenu.h"
 #include "raymath.h"
-#include "system/loadout.h"
 #include <float.h>
 
 enum class GameState
@@ -46,8 +45,6 @@ int main()
     PlayerMovement player;
     MainMenu mainMenu;
     PauseSystem pauseSystem;
-    Loadout loadout;
-    bool showLoadout = false;
     GameState currentState = GameState::MAIN_MENU;
     bool menuMusicActive = false;
 
@@ -60,18 +57,14 @@ int main()
     };
     const int obstacleCount = sizeof(obstacles) / sizeof(obstacles[0]);
 
-    // initialize loadout and sounds
-    loadout.Init();
+    // initialize sounds
     Sound hookSound = LoadSound("assets/sounds/sfx/hook_sfx.mp3");
 
     while (!WindowShouldClose())
     {
         if (currentState == GameState::PLAYING)
         {
-            if (!showLoadout)
-            {
-                player.Update(camera, obstacles, obstacleCount);
-            }
+            player.Update(camera, obstacles, obstacleCount);
 
             if (IsKeyPressed(KEY_ESCAPE))
             {
@@ -86,7 +79,7 @@ int main()
                 {
                     player.StopGrapple();
                 }
-                else if (!showLoadout)
+                else
                 {
                     Ray ray = {camera.position, Vector3Normalize(Vector3Subtract(camera.target, camera.position))};
                     float bestDistance = FLT_MAX;
@@ -112,29 +105,21 @@ int main()
                 }
             }
 
-            // movement SFX (only when not showing loadout)
-            if (!showLoadout)
+            // movement SFX
+            if (player.IsWalking())
             {
-                if (player.IsWalking())
+                if (!IsSoundPlaying(walkSound))
                 {
-                    if (!IsSoundPlaying(walkSound))
-                    {
-                        StopSound(sprintSound);
-                        PlaySound(walkSound);
-                    }
+                    StopSound(sprintSound);
+                    PlaySound(walkSound);
                 }
-                else if (player.IsSprinting())
-                {
-                    if (!IsSoundPlaying(sprintSound))
-                    {
-                        StopSound(walkSound);
-                        PlaySound(sprintSound);
-                    }
-                }
-                else
+            }
+            else if (player.IsSprinting())
+            {
+                if (!IsSoundPlaying(sprintSound))
                 {
                     StopSound(walkSound);
-                    StopSound(sprintSound);
+                    PlaySound(sprintSound);
                 }
             }
             else
@@ -214,13 +199,6 @@ int main()
             UpdateMusicStream(mainMenuMusic);
         }
 
-        // Toggle loadout menu (now bound to B)
-        if (IsKeyPressed(KEY_B))
-        {
-            showLoadout = !showLoadout;
-            if (showLoadout) EnableCursor(); else DisableCursor();
-        }
-
         BeginDrawing();
 
         if (currentState == GameState::MAIN_MENU)
@@ -275,43 +253,6 @@ int main()
             }
 
             EndMode3D();
-
-            // draw equipped gun in right hand
-            Gun* equipped = loadout.GetEquippedGun();
-            if (equipped && !showLoadout)
-            {
-                // HUD debug: show mesh count and placeholder status
-                char status[128];
-                snprintf(status, sizeof(status), "Equipped meshes=%d placeholder=%s", equipped->GetMeshCount(), equipped->IsPlaceholder() ? "yes" : "no");
-                DrawText(status, 10, 40, 16, WHITE);
-
-                // try a larger scale and slightly different offsets for visibility
-                equipped->DrawInHand(camera, {0.45f, -0.35f, 0.7f});
-            }
-
-            // draw loadout UI overlay if open
-            if (showLoadout)
-            {
-                loadout.DrawMenu(screenWidth, screenHeight);
-                if (loadout.ConsumeEquip())
-                {
-                    showLoadout = false;
-                    DisableCursor();
-                }
-            }
-
-            // Show revolver load message if placeholder used
-            Gun* equipped2 = loadout.GetEquippedGun();
-            if (equipped2)
-            {
-                const char* msg = equipped2->LoadMessage();
-                if (msg && msg[0] != '\0' && equipped2->IsPlaceholder())
-                {
-                    DrawText(msg, 10, screenHeight - 60, 18, RED);
-                    const char* diag = loadout.GetDiagnostics();
-                    if (diag && diag[0] != '\0') DrawText(diag, 10, screenHeight - 30, 12, RED);
-                }
-            }
 
             if (currentState == GameState::PAUSED)
             {
