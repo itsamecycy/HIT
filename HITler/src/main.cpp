@@ -224,7 +224,7 @@ int main()
         }
         else if (currentState == GameState::PLAYING || currentState == GameState::PAUSED)
         {
-            ClearBackground(GRAY);
+            ClearBackground(backgroundColor);
             BeginMode3D(camera);
             DrawGrid(50, 2.0f);
             // debug cubes removed
