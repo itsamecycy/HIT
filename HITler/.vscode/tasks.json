@@ -21,7 +21,7 @@
                 "-lgdi32",
                 "-lwinmm",
                 "-o",
-                "game.exe"
+                "HIT.exe"
             ],
             "group": {
                 "kind": "build",
@@ -55,7 +55,7 @@
                 "-lwinmm",
                 "-lshlwapi",
                 "-o",
-                "game_standalone.exe"
+                "HIT_standalone.exe"
             ],
             "group": {
                 "kind": "build",
