@@ -3,7 +3,7 @@ This project repo is for a fps game exercise
 
 ## Documentation
 
-📖 [User Manual](USER_MANUAL.md)
+📖 [User Manual](user_manual.md)
 
 To build the game, go inside main.cpp then...
 ```bash
