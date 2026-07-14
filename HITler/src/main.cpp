@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include "system/playerMovement.h"
 #include "system/pauseSystem.h"
+#include "system/settings.h"
 #include "scenes/mainMenu.h"
 #include "raymath.h"
 #include <float.h>
@@ -17,8 +18,8 @@ enum class GameState
 int main()
 {
     Color backgroundColor = { 135, 206, 235, 200 };
-    const int screenWidth = 1280;
-    const int screenHeight = 720;
+    int screenWidth = 1280;
+    int screenHeight = 720;
 
     InitWindow(screenWidth, screenHeight, "HITler");
     SetExitKey(KEY_NULL);
@@ -45,7 +46,9 @@ int main()
     PlayerMovement player;
     MainMenu mainMenu;
     PauseSystem pauseSystem;
+    Settings settings;
     GameState currentState = GameState::MAIN_MENU;
+    GameState previousState = GameState::MAIN_MENU;
     bool menuMusicActive = false;
 
     Obstacle obstacles[] =
@@ -138,7 +141,9 @@ int main()
             }
             else if (pauseResult == PAUSE_SETTINGS)
             {
+                previousState = GameState::PAUSED;
                 currentState = GameState::MENU_SETTINGS;
+                settings.Reset();
             }
             else if (pauseResult == PAUSE_MAIN_MENU)
             {
@@ -158,7 +163,9 @@ int main()
             }
             else if (result == MENU_SETTINGS)
             {
+                previousState = GameState::MAIN_MENU;
                 currentState = GameState::MENU_SETTINGS;
+                settings.Reset();
             }
             else if (result == MENU_CREDITS)
             {
@@ -169,7 +176,19 @@ int main()
                 break;
             }
         }
-        else if (currentState == GameState::MENU_SETTINGS || currentState == GameState::MENU_CREDITS)
+        else if (currentState == GameState::MENU_SETTINGS)
+        {
+            settings.Update(screenWidth, screenHeight);
+            if (settings.ShouldReturn())
+            {
+                backgroundColor = settings.GetBackgroundColor();
+                SetSoundVolume(walkSound, settings.GetMasterVolume());
+                SetSoundVolume(sprintSound, settings.GetMasterVolume());
+                SetMusicVolume(mainMenuMusic, settings.GetMasterVolume() * 0.7f);
+                currentState = previousState;
+            }
+        }
+        else if (currentState == GameState::MENU_CREDITS)
         {
             if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_BACKSPACE))
             {
@@ -208,11 +227,7 @@ int main()
         }
         else if (currentState == GameState::MENU_SETTINGS)
         {
-            ClearBackground(GRAY);
-            const char* title = "Settings";
-            DrawText(title, screenWidth / 2 - MeasureText(title, 48) / 2, 120, 48, RED);
-            DrawText("Audio, graphics and controls are not implemented yet.", screenWidth / 2 - MeasureText("Audio, graphics and controls are not implemented yet.", 24) / 2, 240, 24, WHITE);
-            DrawText("Press ESC or Enter to return.", screenWidth / 2 - MeasureText("Press ESC or Enter to return.", 20) / 2, screenHeight - 80, 20, LIGHTGRAY);
+            settings.Draw(screenWidth, screenHeight);
         }
         else if (currentState == GameState::MENU_CREDITS)
         {

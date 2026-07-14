@@ -12,6 +12,7 @@
                 "src/maps/testmap.cpp",
                 "src/system/playerMovement.cpp",
                 "src/system/pauseSystem.cpp",
+                "src/system/settings.cpp",
                 "src/scenes/mainMenu.cpp",
                 "-I",
                 "src",
