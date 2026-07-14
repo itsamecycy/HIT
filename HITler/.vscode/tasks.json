@@ -30,6 +30,44 @@
             "problemMatcher": []
         },
         {
+            "label": "build standalone executable",
+            "type": "shell",
+            "command": "C:\\msys64\\ucrt64\\bin\\g++.exe",
+            "args": [
+                "-std=c++17",
+                "-O2",
+                "src/main.cpp",
+                "src/maps/testmap.cpp",
+                "src/system/playerMovement.cpp",
+                "src/system/pauseSystem.cpp",
+                "src/system/settings.cpp",
+                "src/scenes/mainMenu.cpp",
+                "-I",
+                "src",
+                "-static-libgcc",
+                "-static-libstdc++",
+                "-L",
+                "C:\\msys64\\ucrt64\\lib",
+                "-l:libraylib.a",
+                "-lopengl32",
+                "-lgdi32",
+                "-lwinmm",
+                "-o",
+                "game_standalone.exe"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
             "type": "cppbuild",
             "label": "C/C++: gcc.exe build active file",
             "command": "C:\\msys64\\ucrt64\\bin\\gcc.exe",
