@@ -69,6 +69,8 @@ Use the **Left** and **Right Arrow** keys to choose which color channel you want
 
 > **Note:** Each RGB value must be between **0** and **255**.
 >
+> This also only works on the **test map**
+>
 > Example:
 > - R = 255
 > - G = 128
