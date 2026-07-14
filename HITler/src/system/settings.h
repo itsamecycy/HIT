@@ -32,6 +32,9 @@ private:
     
     int selectedOption;
     int selectedSubOption;
+    bool isInputMode;
+    char inputBuffer[4];
+    int inputIndex;
     
     // Resolution presets: width, height
     static constexpr int resolutionCount = 4;

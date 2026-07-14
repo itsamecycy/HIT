@@ -1,6 +1,7 @@
 #include "settings.h"
 #include <cstring>
 #include <cstdio>
+#include <cstdlib>
 
 Settings::Settings()
     : masterVolume(0.7f)
@@ -9,11 +10,65 @@ Settings::Settings()
     , shouldReturn(false)
     , selectedOption(0)
     , selectedSubOption(0)
+    , isInputMode(false)
+    , inputIndex(0)
 {
+    inputBuffer[0] = '\0';
 }
 
 void Settings::Update(int screenWidth, int screenHeight)
 {
+    if (isInputMode)
+    {
+        // Handle numeric input for RGB value
+        int key = GetCharPressed();
+        while (key > 0)
+        {
+            if ((key >= 48 && key <= 57) && inputIndex < 3)  // 0-9
+            {
+                inputBuffer[inputIndex] = (char)key;
+                inputIndex++;
+                inputBuffer[inputIndex] = '\0';
+            }
+            key = GetCharPressed();
+        }
+        
+        // Backspace to delete
+        if (IsKeyPressed(KEY_BACKSPACE) && inputIndex > 0)
+        {
+            inputIndex--;
+            inputBuffer[inputIndex] = '\0';
+        }
+        
+        // Enter to confirm
+        if (IsKeyPressed(KEY_ENTER))
+        {
+            int value = atoi(inputBuffer);
+            if (value > 255) value = 255;
+            
+            if (selectedSubOption == 0)
+                backgroundColor.r = (unsigned char)value;
+            else if (selectedSubOption == 1)
+                backgroundColor.g = (unsigned char)value;
+            else if (selectedSubOption == 2)
+                backgroundColor.b = (unsigned char)value;
+            
+            isInputMode = false;
+            inputIndex = 0;
+            inputBuffer[0] = '\0';
+        }
+        
+        // Escape to cancel
+        if (IsKeyPressed(KEY_ESCAPE))
+        {
+            isInputMode = false;
+            inputIndex = 0;
+            inputBuffer[0] = '\0';
+        }
+        
+        return;
+    }
+    
     if (IsKeyPressed(KEY_UP))
     {
         selectedOption--;
@@ -67,36 +122,12 @@ void Settings::Update(int screenWidth, int screenHeight)
             if (selectedSubOption > 2) selectedSubOption = 0;
         }
         
-        // Adjust RGB values (0 = R, 1 = G, 2 = B)
-        if (IsKeyPressed(KEY_UP))
+        // Enter to start input mode
+        if (IsKeyPressed(KEY_ENTER))
         {
-            if (selectedSubOption == 0)
-            {
-                backgroundColor.r = (unsigned char)((int)backgroundColor.r + 10 > 255 ? 255 : (int)backgroundColor.r + 10);
-            }
-            else if (selectedSubOption == 1)
-            {
-                backgroundColor.g = (unsigned char)((int)backgroundColor.g + 10 > 255 ? 255 : (int)backgroundColor.g + 10);
-            }
-            else if (selectedSubOption == 2)
-            {
-                backgroundColor.b = (unsigned char)((int)backgroundColor.b + 10 > 255 ? 255 : (int)backgroundColor.b + 10);
-            }
-        }
-        else if (IsKeyPressed(KEY_DOWN))
-        {
-            if (selectedSubOption == 0)
-            {
-                backgroundColor.r = (unsigned char)((int)backgroundColor.r - 10 < 0 ? 0 : (int)backgroundColor.r - 10);
-            }
-            else if (selectedSubOption == 1)
-            {
-                backgroundColor.g = (unsigned char)((int)backgroundColor.g - 10 < 0 ? 0 : (int)backgroundColor.g - 10);
-            }
-            else if (selectedSubOption == 2)
-            {
-                backgroundColor.b = (unsigned char)((int)backgroundColor.b - 10 < 0 ? 0 : (int)backgroundColor.b - 10);
-            }
+            isInputMode = true;
+            inputIndex = 0;
+            inputBuffer[0] = '\0';
         }
     }
     
@@ -117,6 +148,32 @@ void Settings::Draw(int screenWidth, int screenHeight) const
     
     const char* title = "Settings";
     DrawText(title, screenWidth / 2 - MeasureText(title, 48) / 2, 60, 48, RED);
+    
+    // If in input mode, show input dialog
+    if (isInputMode)
+    {
+        const char* channels[] = {"Red (R)", "Green (G)", "Blue (B)"};
+        const char* channelName = channels[selectedSubOption];
+        
+        // Draw semi-transparent overlay
+        DrawRectangle(200, 250, screenWidth - 400, 200, Fade(BLACK, 0.7f));
+        DrawRectangleLines(200, 250, screenWidth - 400, 200, WHITE);
+        
+        // Draw prompt
+        char prompt[64];
+        snprintf(prompt, sizeof(prompt), "Enter %s value (0-255):", channelName);
+        DrawText(prompt, screenWidth / 2 - MeasureText(prompt, 24) / 2, 280, 24, YELLOW);
+        
+        // Draw input box
+        DrawRectangle(screenWidth / 2 - 100, 330, 200, 40, DARKGRAY);
+        DrawRectangleLines(screenWidth / 2 - 100, 330, 200, 40, WHITE);
+        DrawText(inputBuffer, screenWidth / 2 - MeasureText(inputBuffer, 32) / 2, 340, 32, WHITE);
+        
+        // Draw hints
+        DrawText("Press Enter to confirm, ESC to cancel", screenWidth / 2 - MeasureText("Press Enter to confirm, ESC to cancel", 16) / 2, 400, 16, LIGHTGRAY);
+        
+        return;
+    }
     
     const int startY = 140;
     const int spacing = 70;
@@ -174,14 +231,24 @@ void Settings::Draw(int screenWidth, int screenHeight) const
                 {
                     const char* channels[] = {"[R]", "[G]", "[B]"};
                     DrawText(channels[selectedSubOption], colorBoxX - 160, colorBoxY + 45, 14, ORANGE);
+                    DrawText("Press Enter to input", colorBoxX - 220, colorBoxY + 65, 12, LIGHTGRAY);
                 }
             }
         }
     }
     
-    DrawText("Use Up/Down to navigate, Left/Right to adjust, ESC to return", 
-        screenWidth / 2 - MeasureText("Use Up/Down to navigate, Left/Right to adjust, ESC to return", 18) / 2, 
-        screenHeight - 50, 18, LIGHTGRAY);
+    if (selectedOption == OPTION_BACKGROUND_COLOR && !isInputMode)
+    {
+        DrawText("Use Up/Down to navigate, Left/Right to select channel, Enter to input, ESC to return", 
+            screenWidth / 2 - MeasureText("Use Up/Down to navigate, Left/Right to select channel, Enter to input, ESC to return", 18) / 2, 
+            screenHeight - 50, 18, LIGHTGRAY);
+    }
+    else
+    {
+        DrawText("Use Up/Down to navigate, Left/Right to adjust, ESC to return", 
+            screenWidth / 2 - MeasureText("Use Up/Down to navigate, Left/Right to adjust, ESC to return", 18) / 2, 
+            screenHeight - 50, 18, LIGHTGRAY);
+    }
 }
 
 void Settings::Reset()
